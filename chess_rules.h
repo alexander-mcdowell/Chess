@@ -10,7 +10,8 @@ struct Piece {
     enum Rank rank;
     int row;
     int col;
-    boolean moved;
+    // Acts as a normal boolean (0 or 1 for false and true) but with a second value (2) for pawns that have moved two spaces up
+    int moved;
     boolean captured;
 };
 typedef struct Piece Piece;

@@ -3,9 +3,8 @@
 #include "chess_rules.h"
 
 /* TODO:
-- Detect check/checkmate
-- Promotion
-- En Passant
+- Detect if currently in check/checkmate
+- Detect if move would lead to check/checkmate
 */
 
 Piece pieces[32];
@@ -18,6 +17,29 @@ boolean isLegal(Piece piece, int row, int col) {
     int i = getPiece(row, col);
     switch (piece.rank) {
         case PAWN:
+            // Pawn capture
+            if (i != -1) {
+                if (piece.color == WHITE) {
+                    if (piece.row - row == 1 && abs(piece.col - col) == 1 && pieces[i].color == BLACK) return true;
+                } else {
+                    if (row - piece.row == 1 && abs(piece.col - col) == 1 && pieces[i].color == WHITE) return true;
+                }
+            }
+
+            // En passant: A pawn one space to the right of the current pawn that has moved up two can be captured diagonally.
+            if (piece.color == WHITE && piece.row - row == 1 && abs(col - piece.col) == 1) {
+                i = getPiece(piece.row, col);
+                if (i != -1) {
+                    if (pieces[i].color != piece.color && pieces[i].moved == 2) return true;
+                }
+            }
+            if (piece.color == BLACK && row - piece.row == 1 && abs(col - piece.col) == 1) {
+                i = getPiece(piece.row, col);
+                if (i != -1) {
+                    if (pieces[i].color != piece.color && pieces[i].moved == 2) return true;
+                }
+            }
+
             if (piece.color == WHITE && getPiece(piece.row - 1, piece.col) == -1) {
                 // Move up two if haven't already moved
                 if (piece.moved == false && piece.row == row + 2 && piece.col == col) return true;
@@ -549,5 +571,60 @@ void setupChessBoard() {
 }
 
 int isCheck() {
+    int king_row, king_col; 
+    boolean attacked = false;
+    
+    /*
+    See if White King is in check/checkmate
+    */
+    king_row = pieces[20].row;
+    king_col = pieces[20].col;
+    // Search through all black pieces and check for intersections with the king location
+    for (int i = 0; i < 16; i++) {
+        if (pieces[i].captured == false) {
+            switch (pieces[i].rank) {
+                case PAWN:
+                    break;
+                case KNIGHT:
+                    break;
+                case BISHOP:
+                    break;
+                case ROOK:
+                    break;
+                case QUEEN:
+                    break;
+            }
+        }
+    }
+    // If King is currently attacked, move to an available safe position. If none is available, the game is over.
+    if (attacked) {
+    }
+
+    /*
+    See if Black King is in check/checkmate
+    */
+    king_row = pieces[4].row;
+    king_col = pieces[4].col;
+    // Search through all white pieces and check for intersections with the king location
+    for (int i = 0; i < 16; i++) {
+        if (pieces[i].captured == false) {
+            switch (pieces[i].rank) {
+                case PAWN:
+                    break;
+                case KNIGHT:
+                    break;
+                case BISHOP:
+                    break;
+                case ROOK:
+                    break;
+                case QUEEN:
+                    break;
+            }
+        }
+    }
+    // If King is currently attacked, move to an available safe position. If none is available, the game is over.
+    if (attacked) {
+    }
+    
     return 0;
 }

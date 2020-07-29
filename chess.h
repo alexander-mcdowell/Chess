@@ -58,7 +58,10 @@ extern boolean loadMusic(char music_path[]);
 // Handles events (e.g: keyboard presses, mouse clicks, etc.)
 extern void handleEvent();
 
-// Steps through all non-player event processes (e.g: determining whether AI must make a move, handling AI moves, determining win conditions).
+// Move handler
+extern void moveHandler();
+
+// Steps through all processes not handled yet
 extern void step();
 
 // Shutdowns SDL smoothly.

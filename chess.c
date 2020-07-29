@@ -159,14 +159,14 @@ void render() {
 
 // Function called every time the window is resized. Makes resizing look smoother.
 int resizeEventWatcher(void* data, SDL_Event* event) {
-  if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-    SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
-    if (win == (SDL_Window*)data) {
-        updateSpacing();
-        render();
+    if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+        SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
+        if (win == (SDL_Window*)data) {
+            updateSpacing();
+            render();
+        }
     }
-  }
-  return 0;
+    return 0;
 }
 
 void updateSpacing() {
@@ -203,7 +203,7 @@ boolean loadMusic(char music_path[]) {
 }
 
 void handleEvent() {
-    while(SDL_PollEvent(&event) != 0) {
+    while (SDL_PollEvent(&event) != 0) {
         // X button
         if (event.type == SDL_QUIT) {
             running = false;
@@ -278,15 +278,11 @@ void handleEvent() {
     }
 }
 
-void step() {
-    if (Mix_PlayingMusic() == 0) {
-        playCurrent();
-    }
-
-    // Analyzing a chosen move
-    if (move_state == 2) {
-        int i;
-        if (isLegal(pieces[chosen_piece], move_dest.y, move_dest.x)) {
+void moveHandler() {
+    int i;
+    if (isLegal(pieces[chosen_piece], move_dest.y, move_dest.x)) {
+        // Handle castling
+        if (pieces[chosen_piece].rank == KING && !(abs(move_dest.y - move_source.y) == 1 || abs(move_source.x - move_dest.x) == 1)) {
             // White left rook
             if (move_dest.x == 3 && move_dest.y == 8) {
                 i = getPiece(8, 1);
@@ -334,30 +330,83 @@ void step() {
                 board[0][4] = -1;
                 board[0][5] = i;
                 board[0][6] = chosen_piece;
-            } else {
-                // Change the board location
-                i = getPiece(move_dest.y, move_dest.x);
-                board[move_source.y - 1][move_source.x - 1] = -1;
-                board[move_dest.y - 1][move_dest.x - 1] = chosen_piece;
-
-                // Capture the piece at destination
-                if (i != -1) {
-                    pieces[i].captured = true;
-                }
-
-                // Change the piece location
-                pieces[chosen_piece].row = move_dest.y;
-                pieces[chosen_piece].col = move_dest.x;
-                if (!pieces[chosen_piece].moved) pieces[chosen_piece].moved = true;
             }
-            move_source = (SDL_Point) {-1};
-            move_dest = (SDL_Point) {-1};
-            move_state = 0;
-            turn = 1 - turn;
         }
-        // Move illegal, try again.
-        else move_state = 1;
+        // En passant capture
+        else if (pieces[chosen_piece].rank == PAWN && abs(move_source.x - move_dest.x) == 1 && abs(move_source.y - move_dest.y) == 1 \
+                && pieces[getPiece(move_source.y, move_dest.x)].rank == PAWN) {
+            i = getPiece(move_source.y, move_dest.x);
+            pieces[i].captured = true;
+            
+            board[move_source.y - 1][move_source.x - 1] = -1;
+            board[move_dest.y - 1][move_dest.x - 1] = chosen_piece;
+            board[move_source.y - 1][move_dest.x - 1] = -1;
+
+            pieces[chosen_piece].row = move_dest.y;
+            pieces[chosen_piece].col = move_dest.x;
+        }
+        else {
+            // Moving up two for pawns
+            if (pieces[chosen_piece].rank == PAWN && abs(move_dest.y - move_source.y) == 2) {
+                pieces[chosen_piece].moved = 2;
+            }
+
+            // Change the board location
+            i = getPiece(move_dest.y, move_dest.x);
+            board[move_source.y - 1][move_source.x - 1] = -1;
+            board[move_dest.y - 1][move_dest.x - 1] = chosen_piece;
+
+            // Capture the piece at destination
+            if (i != -1) {
+                pieces[i].captured = true;
+            }
+
+            // Change the piece location
+            pieces[chosen_piece].row = move_dest.y;
+            pieces[chosen_piece].col = move_dest.x;
+            if (!pieces[chosen_piece].moved) pieces[chosen_piece].moved = true;
+        }
+
+        // Pawn promotion
+        if (pieces[chosen_piece].rank == PAWN && \
+            ((pieces[chosen_piece].rank == WHITE && pieces[chosen_piece].row == 1) || (pieces[chosen_piece].rank == BLACK && pieces[chosen_piece].row == 8))) {
+            // Prompt user for the rank of the new piece
+            int choice;
+            while (true) {
+                (void) printf("Desired piece for promotion? (Enter one of the numbers)\n 1. Knight.\n 2. Bishop.\n 3. Rook.\n 4. Queen.\n");
+                (void) scanf("%d", &choice);
+                if (choice >= 1 && choice <= 4) break;
+            }
+            switch (choice) {
+                case 1:
+                    pieces[chosen_piece].rank = KNIGHT;
+                    break;
+                case 2:
+                    pieces[chosen_piece].rank = BISHOP;
+                    break;
+                case 3:
+                    pieces[chosen_piece].rank = ROOK;
+                    break;
+                case 4:
+                    pieces[chosen_piece].rank = QUEEN;
+                    break;
+            }
+        }
+
+        move_source = (SDL_Point) {-1};
+        move_dest = (SDL_Point) {-1};
+        move_state = 0;
+        turn = 1 - turn;
     }
+    // Move illegal, try again.
+    else move_state = 1;
+}
+
+void step() {
+    if (Mix_PlayingMusic() == 0) playCurrent();
+
+    // Analyzing a chosen move
+    if (move_state == 2) moveHandler();
 }
 
 boolean cleanup() {
